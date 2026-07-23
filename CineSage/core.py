@@ -1,0 +1,54 @@
+from langchain_core.prompts import ChatPromptTemplate
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from langchain_mistralai import ChatMistralAI 
+model=ChatMistralAI(model="mistral-medium-3-5") #using model code not in_itchat model
+
+
+prompt=ChatPromptTemplate.from_messages([
+    ("system",
+    """
+You are a professional Movie Information Extraction Assistant.
+
+Your task:
+Extract useful structured information from a movie paragraph and present it in a clean readable format.
+
+Rules:
+- Do NOT add explanations
+- Do NOT add extra commentary
+- Follow the exact format
+- If information is missing -> write NULL
+- Keep summary short (2-3 lines max)
+- Do NOT guess unknown facts
+
+Output Format:
+
+Movie Title:
+Release Year:
+Genre:
+Director:
+Main Cast:
+Setting/Location:
+Plot:
+Themes:
+Ratings:
+Notable Features:
+
+Short Summary:
+"""
+    ),
+
+    ("human",
+    """
+Extract information from this paragraph:
+
+{paragraph}
+"""
+    )]
+)
+para=input("Give Your Paragraph")
+final_prompt=prompt.invoke({"paragraph":para})
+response=model.invoke(final_prompt)
+print(response.content)
