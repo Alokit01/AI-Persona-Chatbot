@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -10,6 +11,10 @@ from langchain_core.messages import (
 
 # ---------------- Load Environment ----------------
 load_dotenv()
+
+# Read API key from Streamlit Secrets when deployed
+if "MISTRAL_API_KEY" in st.secrets:
+    os.environ["MISTRAL_API_KEY"] = st.secrets["MISTRAL_API_KEY"]
 
 # ---------------- Initialize Model ----------------
 @st.cache_resource
