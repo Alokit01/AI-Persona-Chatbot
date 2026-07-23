@@ -65,7 +65,6 @@ Run the application
 streamlit run app1.py
 ```
 
-## 📸 Screenshot
 
 Add a screenshot of your application here.
 
