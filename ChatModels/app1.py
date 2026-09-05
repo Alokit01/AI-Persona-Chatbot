@@ -13,13 +13,29 @@ from langchain_core.messages import (
 load_dotenv()
 
 # Read API key from Streamlit Secrets when deployed
-if "MISTRAL_API_KEY" in st.secrets:
-    os.environ["MISTRAL_API_KEY"] = st.secrets["MISTRAL_API_KEY"]
+# if "MISTRAL_API_KEY" in st.secrets:
+#     os.environ["MISTRAL_API_KEY"] = st.secrets["MISTRAL_API_KEY"]
+
+load_dotenv()
+
+try:
+    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+except (st.errors.StreamlitSecretNotFoundError, KeyError):
+    pass
 
 # ---------------- Initialize Model ----------------
+# @st.cache_resource
+# def get_model():
+#     return init_chat_model("mistral-medium-3-5")
+
+# model = get_model()
+
 @st.cache_resource
 def get_model():
-    return init_chat_model("mistral-medium-3-5")
+    return init_chat_model(
+        "gemini-3.6-flash",
+        model_provider="google_genai"
+    )
 
 model = get_model()
 
@@ -301,18 +317,27 @@ else:
     # User Chat Input
     prompt = st.chat_input("Type your message... (Type '0' to return home)")
 
-    if prompt:
-        if prompt.strip() == "0":
-            reset_chat()
+if prompt:
+    if prompt.strip() == "0":
+        reset_chat()
 
-        st.session_state.messages.append(HumanMessage(content=prompt))
-        with st.chat_message("user"):
-            st.write(prompt)
+    st.session_state.messages.append(
+        HumanMessage(content=prompt)
+    )
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                response = model.invoke(st.session_state.messages)
-                st.write(response.content)
+    with st.chat_message("user"):
+        st.write(prompt)
 
-        st.session_state.messages.append(AIMessage(content=response.content))
-        st.rerun()
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            response = model.invoke(st.session_state.messages)
+
+            answer = response.text
+
+            st.write(answer)
+
+            st.session_state.messages.append(
+                AIMessage(content=answer)
+            )
+
+    st.rerun()
