@@ -1,4 +1,3 @@
-
 import os
 import streamlit as st
 from dotenv import load_dotenv
@@ -13,14 +12,33 @@ from langchain_core.messages import (
 # ---------------- Load Environment ----------------
 load_dotenv()
 
-# Read API key from Streamlit Secrets when deployed
-if "MISTRAL_API_KEY" in st.secrets:
-    os.environ["MISTRAL_API_KEY"] = st.secrets["MISTRAL_API_KEY"]
+# Read API key from Streamlit Secrets when deployed, fallback safely
+# try:
+#     if "MISTRAL_API_KEY" in st.secrets:
+#         os.environ["MISTRAL_API_KEY"] = st.secrets["MISTRAL_API_KEY"]
+# except Exception:
+#     pass
+
+
+
+try:
+    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+except (st.errors.StreamlitSecretNotFoundError, KeyError):
+    pass
 
 # ---------------- Initialize Model ----------------
+# @st.cache_resource
+# def get_model():
+#     return init_chat_model("mistral-medium-latest", model_provider="mistralai")
+
+# model = get_model()
+
 @st.cache_resource
 def get_model():
-    return init_chat_model("mistral-medium-3-5")
+    return init_chat_model(
+        "gemini-3.6-flash",
+        model_provider="google_genai"
+    )
 
 model = get_model()
 
@@ -139,7 +157,6 @@ def apply_custom_ui(bg_color, primary_accent, emojis):
     }}
 
     /* --- FIXED CHAT INPUT BOX: DARK BG + BRIGHT WHITE TEXT --- */
-    /* Outer Box Wrapper */
     div[data-testid="stChatInput"] {{
         background-color: #1E293B !important;
         border-radius: 14px !important;
@@ -147,18 +164,16 @@ def apply_custom_ui(bg_color, primary_accent, emojis):
         box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
     }}
 
-    /* Inner Text Area Box */
     div[data-testid="stChatInput"] textarea,
     div[data-baseweb="textarea"],
     div[data-baseweb="textarea"] textarea {{
         background-color: #1E293B !important;
         color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important; /* Forces typed text to stay white */
+        -webkit-text-fill-color: #FFFFFF !important;
         font-size: 1rem !important;
         font-weight: 600 !important;
     }}
 
-    /* Placeholder Styling */
     div[data-testid="stChatInput"] textarea::placeholder {{
         color: #94A3B8 !important;
         -webkit-text-fill-color: #94A3B8 !important;
@@ -299,21 +314,29 @@ else:
             with st.chat_message("assistant"):
                 st.write(msg.content)
 
-    # User Chat Input
-    prompt = st.chat_input("Type your message... (Type '0' to return home)")
+prompt = st.chat_input("Type your message... (Type '0' to return home)")
 
-    if prompt:
-        if prompt.strip() == "0":
-            reset_chat()
+if prompt:
+    if prompt.strip() == "0":
+        reset_chat()
 
-        st.session_state.messages.append(HumanMessage(content=prompt))
-        with st.chat_message("user"):
-            st.write(prompt)
+    st.session_state.messages.append(
+        HumanMessage(content=prompt)
+    )
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                response = model.invoke(st.session_state.messages)
-                st.write(response.content)
+    with st.chat_message("user"):
+        st.write(prompt)
 
-        st.session_state.messages.append(AIMessage(content=response.content))
-        st.rerun()
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            response = model.invoke(st.session_state.messages)
+
+            answer = response.text
+
+            st.write(answer)
+
+            st.session_state.messages.append(
+                AIMessage(content=answer)
+            )
+
+    st.rerun()
